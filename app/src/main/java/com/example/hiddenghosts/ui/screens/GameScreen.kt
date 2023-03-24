@@ -8,7 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -115,13 +115,14 @@ private fun Grid(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items(state.cells, key = { it.id }) {
+                itemsIndexed(state.cells) { index, item ->
                     Cell(
-                        cell = it,
+                        cell = item,
+                        currentIndex = index,
                         lastIndex = state.cells.lastIndex,
                         gameProgressStatus = state.status,
                         enabled = state.status == GameProgressStatus.InProgress,
-                        onClick = { onCellClick(it.id) }
+                        onClick = { onCellClick(index) }
                     )
                 }
             }
@@ -149,6 +150,7 @@ private fun Grid(
 @Composable
 fun ColumnScope.Cell(
     cell: Cell,
+    currentIndex: Int,
     lastIndex: Int,
     gameProgressStatus: GameProgressStatus,
     enabled: Boolean,
@@ -173,11 +175,11 @@ fun ColumnScope.Cell(
     LaunchedEffect(gameProgressStatus) {
         when (gameProgressStatus) {
             GameProgressStatus.Loading -> {
-                delay(cell.id * Constants.CELL_ANIMATION_DELAY)
+                delay(currentIndex * Constants.CELL_ANIMATION_DELAY)
                 isVisible = true
             }
             GameProgressStatus.Failure, GameProgressStatus.Success -> {
-                delay((lastIndex - cell.id) * Constants.CELL_ANIMATION_DELAY)
+                delay((lastIndex - currentIndex) * Constants.CELL_ANIMATION_DELAY)
                 isVisible = false
             }
             else -> Unit

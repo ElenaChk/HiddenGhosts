@@ -42,23 +42,21 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun onCellClick(cellId: Int) {
+    fun onCellClick(index: Int) {
         _state.update { state ->
-            val cell = state.cells.first { it.id == cellId }
+            val cell = state.cells[index]
             val newState = when (cell.state) {
                 CellState.Idle -> cell.imageRes?.let { CellState.Success } ?: CellState.Error
                 else -> cell.state
             }
+            if (cell.state == newState) return@update state
             val newScore =
                 if (newState == CellState.Success) state.score + Constants.GUESSED_GHOST_SCORE
                 else state.score
             state.copy(
-                cells = state.cells.map {
-                    if (it.id == cellId) {
-                        it.copy(state = newState)
-                    } else {
-                        it
-                    }
+                cells = state.cells.mapIndexed { i, c ->
+                    if (i == index) c.copy(state = newState)
+                    else c
                 },
                 tryCount = state.tryCount + 1,
                 score = newScore
@@ -72,7 +70,7 @@ class MainViewModel : ViewModel() {
     private fun setLevel() {
         with(_state.value) {
             val newLevel = if (status == GameProgressStatus.Success) level.nextLevel else level
-            val cells = List(newLevel.cellCount) { Cell(id = it) }
+            val cells = List(newLevel.cellCount) { Cell() }
             _state.update {
                 it.copy(
                     level = newLevel,
@@ -86,15 +84,15 @@ class MainViewModel : ViewModel() {
     private fun populateCells(isRestart: Boolean = false) {
         _state.update { state ->
             val cells =
-                if (isRestart) List(state.level.cellCount) { Cell(id = it) } else state.cells
+                if (isRestart) List(state.level.cellCount) { Cell() } else state.cells
             val randomCells = cells.shuffled().take(state.level.ghostCount)
             var availableGhosts = ghosts.toMutableList()
-            val cellsWithGhosts = cells.map {
-                if (randomCells.contains(it)) {
+            val cellsWithGhosts = cells.map { cell ->
+                if (randomCells.any { it === cell }) {
                     if (availableGhosts.isEmpty()) availableGhosts = ghosts.toMutableList()
-                    it.copy(imageRes = availableGhosts.removeFirst())
+                    cell.copy(imageRes = availableGhosts.removeFirst())
                 } else {
-                    it
+                    cell
                 }
             }
             state.copy(
